@@ -3,6 +3,7 @@ class CartItem {
   final String productId;
   final String name;
   final double price;
+  final String imageUrl;
   int quantity;
 
   CartItem({
@@ -10,6 +11,7 @@ class CartItem {
     required this.productId,
     required this.name,
     required this.price,
+    required this.imageUrl,
     required this.quantity,
   });
 
@@ -19,6 +21,7 @@ class CartItem {
       'product_id': productId,
       'name': name,
       'price': price,
+      'imageUrl': imageUrl,
       'quantity': quantity,
     };
   }
@@ -29,6 +32,7 @@ class CartItem {
       productId: map['product_id'],
       name: map['name'],
       price: (map['price'] as num).toDouble(),
+      imageUrl: map['imageUrl'] ?? '',
       quantity: map['quantity'],
     );
   }

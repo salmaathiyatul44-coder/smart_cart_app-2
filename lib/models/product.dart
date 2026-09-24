@@ -1,44 +1,35 @@
-import 'package:flutter/material.dart';
-import '../providers/cart_provider.dart';
+class Product {
+  final String id;
+  final String name;
+  final double price;
+  final String imageUrl;
+  final String description;
 
-class ProductItem extends StatelessWidget {
-  final Product product;
+  Product({
+    required this.id,
+    required this.name,
+    required this.price,
+    required this.imageUrl,
+    required this.description,
+  });
 
-  const ProductItem({super.key, required this.product});
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'price': price,
+      'imageUrl': imageUrl,
+      'description': description,
+    };
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-      child: ListTile(
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.network(
-            product.imageUrl,
-            width: 60,
-            height: 60,
-            fit: BoxFit.cover,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return const SizedBox(
-                width: 60,
-                height: 60,
-                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                width: 60,
-                height: 60,
-                color: Colors.grey[300],
-                child: const Icon(Icons.broken_image, color: Colors.grey),
-              );
-            },
-          ),
-        ),
-        title: Text(product.title),
-        subtitle: Text('Rp ${product.price.toStringAsFixed(0)}'),
-      ),
+  factory Product.fromMap(Map<String, dynamic> map) {
+    return Product(
+      id: map['id'],
+      name: map['name'],
+      price: (map['price'] as num).toDouble(),
+      imageUrl: map['imageUrl'] ?? '',
+      description: map['description'] ?? '',
     );
   }
 }

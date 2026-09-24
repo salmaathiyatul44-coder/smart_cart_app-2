@@ -1,157 +1,120 @@
 import 'package:flutter/material.dart';
-
-class Product {
-  final String id;
-  final String title;
-  final double price;
-  final String imageUrl;
-
-  Product({
-    required this.id,
-    required this.title,
-    required this.price,
-    required this.imageUrl,
-  });
-}
-
-class CartItem {
-  final String id;
-  final String title;
-  final double price;
-  final String imageUrl;
-  int quantity;
-
-  CartItem({
-    required this.id,
-    required this.title,
-    required this.price,
-    required this.imageUrl,
-    this.quantity = 1,
-  });
-}
+import '../helpers/db_helper.dart';
+import '../models/cart_item.dart';
+import '../models/product.dart';
 
 class CartProvider with ChangeNotifier {
-  final List<Product> _products = [
-    Product(
-      id: '1',
-      title: 'Headphone',
-      price: 500000,
-      imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500',
-    ),
-    Product(
-      id: '2',
-      title: 'SmartWatch',
-      price: 1000000,
-      imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500',
-    ),
-    Product(
-      id: '3',
-      title: 'Laptop RPL Pro',
-      price: 12500000,
-      imageUrl: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500',
-    ),
-    Product(
-      id: '4',
-      title: 'Keyboard Mechanical',
-      price: 500000,
-      imageUrl: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500',
-    ),
-  ];
+  List<Product> _products = [];
+  List<CartItem> _cartItems = [];
 
-  final Map<String, CartItem> _cartItems = {};
-
-  List<Product> get items => [..._products];
-  Map<String, CartItem> get cartItems => {..._cartItems};
+  List<Product> get products => [..._products];
+  List<CartItem> get cartItems => [..._cartItems];
 
   int get itemCount {
-    int total = 0;
-    _cartItems.forEach((key, item) {
-      total += item.quantity;
-    });
-    return total;
+    return _cartItems.fold(0, (sum, item) => sum + item.quantity);
   }
 
-  double get totalAmount {
-    double total = 0.0;
-    _cartItems.forEach((key, item) {
-      total += item.price * item.quantity;
-    });
-    return total;
+  double get totalPrice {
+    return _cartItems.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
   }
 
-  void addToCart(Product product) {
-    if (_cartItems.containsKey(product.id)) {
-      _cartItems.update(
-        product.id,
-        (existing) => CartItem(
-          id: existing.id,
-          title: existing.title,
-          price: existing.price,
-          imageUrl: existing.imageUrl,
-          quantity: existing.quantity + 1,
-        ),
-      );
-    } else {
-      _cartItems.putIfAbsent(
-        product.id,
-        () => CartItem(
-          id: product.id,
-          title: product.title,
-          price: product.price,
-          imageUrl: product.imageUrl,
-          quantity: 1,
-        ),
-      );
-    }
+  Future<void> fetchAndSetData() async {
+    final productList = await DBHelper.instance.getProducts();
+    _products = productList.map((item) => Product(
+      id: item['id'],
+      name: item['name'],
+      price: (item['price'] as num).toDouble(),
+      imageUrl: item['imageUrl'],
+      description: item['description'] ?? '',
+    )).toList();
+
+    final cartList = await DBHelper.instance.getCartItems();
+    _cartItems = cartList.map((item) => CartItem(
+      id: item['id'],
+      productId: item['product_id'],
+      name: item['name'],
+      price: (item['price'] as num).toDouble(),
+      imageUrl: item['imageUrl'],
+      quantity: item['quantity'],
+    )).toList();
+
     notifyListeners();
   }
 
-  void reduceQuantity(String productId) {
-    if (!_cartItems.containsKey(productId)) return;
-    if (_cartItems[productId]!.quantity > 1) {
-      _cartItems.update(
-        productId,
-        (existing) => CartItem(
-          id: existing.id,
-          title: existing.title,
-          price: existing.price,
-          imageUrl: existing.imageUrl,
-          quantity: existing.quantity - 1,
-        ),
-      );
+  Future<void> addToCart(Product product) async {
+    final index = _cartItems.indexWhere((item) => item.productId == product.id);
+
+    if (index >= 0) {
+      final newQuantity = _cartItems[index].quantity + 1;
+      _cartItems[index].quantity = newQuantity;
+      await DBHelper.instance.updateCartQuantity(product.id, newQuantity);
     } else {
-      _cartItems.remove(productId);
+      final newItem = CartItem(
+        id: DateTime.now().toString(),
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        imageUrl: product.imageUrl,
+        quantity: 1,
+      );
+      _cartItems.add(newItem);
+      await DBHelper.instance.insertCart({
+        'id': newItem.id,
+        'product_id': newItem.productId,
+        'name': newItem.name,
+        'price': newItem.price,
+        'imageUrl': newItem.imageUrl,
+        'quantity': newItem.quantity,
+      });
     }
+
     notifyListeners();
   }
 
-  void addQuantity(String productId) {
-    if (_cartItems.containsKey(productId)) {
-      _cartItems.update(
-        productId,
-        (existing) => CartItem(
-          id: existing.id,
-          title: existing.title,
-          price: existing.price,
-          imageUrl: existing.imageUrl,
-          quantity: existing.quantity + 1,
-        ),
-      );
+  Future<void> updateQuantity(String productId, int newQuantity) async {
+    final index = _cartItems.indexWhere((item) => item.productId == productId);
+    if (index >= 0) {
+      if (newQuantity <= 0) {
+        _cartItems.removeAt(index);
+        await DBHelper.instance.deleteCartItem(productId);
+      } else {
+        _cartItems[index].quantity = newQuantity;
+        await DBHelper.instance.updateCartQuantity(productId, newQuantity);
+      }
       notifyListeners();
     }
   }
 
-  void addProduct(String title, double price, String imageUrl) {
-    _products.add(
-      Product(
-        id: DateTime.now().toString(),
-        title: title,
-        price: price,
-        imageUrl: imageUrl.isEmpty
-            ? 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500'
-            : imageUrl,
-      ),
+  Future<void> addProduct(String name, double price, String imageUrl, String description) async {
+    final newProduct = Product(
+      id: DateTime.now().toString(),
+      name: name,
+      price: price,
+      imageUrl: imageUrl,
+      description: description,
     );
+    _products.add(newProduct);
+    await DBHelper.instance.insertProduct({
+      'id': newProduct.id,
+      'name': newProduct.name,
+      'price': newProduct.price,
+      'imageUrl': newProduct.imageUrl,
+      'description': newProduct.description,
+    });
+    notifyListeners();
+  }
+
+  Future<void> deleteProduct(String id) async {
+    _products.removeWhere((prod) => prod.id == id);
+    _cartItems.removeWhere((item) => item.productId == id);
+    await DBHelper.instance.deleteProduct(id);
+    await DBHelper.instance.deleteCartItem(id);
+    notifyListeners();
+  }
+
+  Future<void> clearCart() async {
+    _cartItems.clear();
+    await DBHelper.instance.clearCart();
     notifyListeners();
   }
 }
