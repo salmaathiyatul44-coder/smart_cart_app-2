@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/cart_provider.dart';
-import 'screens/product_list_screen.dart';
+import 'pages/product_list_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,16 +13,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (ctx) => CartProvider()..fetchAndSetData(),
+      create: (ctx) => CartProvider(),
       child: MaterialApp(
-        title: 'GadgetHub',
         debugShowCheckedModeBanner: false,
+        title: 'Toko Baju Digital',
         theme: ThemeData(
-          brightness: Brightness.dark,
-          scaffoldBackgroundColor: const Color(0xFF121212),
-          primaryColor: const Color(0xFFE91E63),
+          primarySwatch: Colors.deepOrange,
+          useMaterial3: true,
         ),
-        home: const ProductListScreen(),
+        home: const ProductListPage(),
       ),
     );
   }

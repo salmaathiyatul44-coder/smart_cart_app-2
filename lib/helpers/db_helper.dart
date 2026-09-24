@@ -1,5 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import '../models/product.dart';
+import '../models/cart_item.dart';
 
 class DBHelper {
   static final DBHelper instance = DBHelper._init();
@@ -9,7 +11,7 @@ class DBHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('shopping_cart.db');
+    _database = await _initDB('toko_baju.db');
     return _database!;
   }
 
@@ -19,118 +21,104 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 3, // Versi dinaikkan agar membuat ulang tabel
+      version: 1,
       onCreate: _createDB,
-      onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _createDB(Database db, int version) async {
+    // Tabel master_products sesuai kriteria LKPD 4
     await db.execute('''
-      CREATE TABLE products (
+      CREATE TABLE master_products (
         id TEXT PRIMARY KEY,
-        name TEXT,
-        price REAL,
-        imageUrl TEXT,
-        description TEXT
+        name TEXT NOT NULL,
+        price REAL NOT NULL,
+        imageUrl TEXT
       )
     ''');
 
+    // Tabel local_cart sesuai kriteria LKPD 4
     await db.execute('''
-      CREATE TABLE cart (
+      CREATE TABLE local_cart (
         id TEXT PRIMARY KEY,
-        product_id TEXT,
-        name TEXT,
-        price REAL,
+        product_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        price REAL NOT NULL,
         imageUrl TEXT,
-        quantity INTEGER
+        quantity INTEGER NOT NULL
       )
     ''');
 
-    // Masukkan Produk Awal/Default ke Database
-    await db.insert('products', {
-      'id': 'p1',
-      'name': 'Smartphone Pro',
-      'price': 5000000.0,
-      'imageUrl': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500',
-      'description': 'Smartphone canggih dengan layar AMOLED dan kamera jernih.',
+    // Katalog Produk Baju & Fashion
+    await db.insert('master_products', {
+      'id': 'b1',
+      'name': 'Kaos Oversize Casual',
+      'price': 85000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=600',
     });
 
-    await db.insert('products', {
-      'id': 'p2',
-      'name': 'Laptop Ultra',
-      'price': 12000000.0,
-      'imageUrl': 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500',
-      'description': 'Laptop ringan berperforma tinggi untuk kerja dan game.',
+    await db.insert('master_products', {
+      'id': 'b2',
+      'name': 'Jaket Denim Vintage',
+      'price': 245000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?q=80&w=600',
     });
 
-    await db.insert('products', {
-      'id': 'p3',
-      'name': 'Wireless Earbuds',
-      'price': 750000.0,
-      'imageUrl': 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500',
-      'description': 'Earbuds nirkabel dengan Noise Cancelling.',
+    await db.insert('master_products', {
+      'id': 'b3',
+      'name': 'Kemeja Flanel Premium',
+      'price': 135000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?q=80&w=600',
     });
 
-    await db.insert('products', {
-      'id': 'p4',
-      'name': 'Smartwatch Fit',
-      'price': 1500000.0,
-      'imageUrl': 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500',
-      'description': 'Jam tangan pintar untuk memantau kesehatan dan olahraga.',
+    await db.insert('master_products', {
+      'id': 'b4',
+      'name': 'Hoodie Fleece Plain',
+      'price': 175000.0,
+      'imageUrl': 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?q=80&w=600',
     });
   }
 
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    await db.execute('DROP TABLE IF EXISTS products');
-    await db.execute('DROP TABLE IF EXISTS cart');
-    await _createDB(db, newVersion);
+  // --- CRUD MASTER PRODUCTS ---
+  Future<List<Product>> getProducts() async {
+    final db = await instance.database;
+    final result = await db.query('master_products');
+    return result.map((json) => Product.fromMap(json)).toList();
   }
 
-  // --- CRUD PRODUK ---
-  Future<List<Map<String, dynamic>>> getProducts() async {
+  // --- CRUD LOCAL CART ---
+  Future<List<CartItem>> getCartItems() async {
     final db = await instance.database;
-    return await db.query('products');
+    final result = await db.query('local_cart');
+    return result.map((json) => CartItem.fromMap(json)).toList();
   }
 
-  Future<int> insertProduct(Map<String, dynamic> row) async {
+  Future<void> insertCartItem(CartItem item) async {
     final db = await instance.database;
-    return await db.insert('products', row, conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert(
+      'local_cart',
+      item.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
-  Future<int> deleteProduct(String id) async {
+  Future<void> updateCartQuantity(String productId, int quantity) async {
     final db = await instance.database;
-    return await db.delete('products', where: 'id = ?', whereArgs: [id]);
-  }
-
-  // --- CRUD KERANJANG ---
-  Future<List<Map<String, dynamic>>> getCartItems() async {
-    final db = await instance.database;
-    return await db.query('cart');
-  }
-
-  Future<int> insertCart(Map<String, dynamic> row) async {
-    final db = await instance.database;
-    return await db.insert('cart', row, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  Future<int> updateCartQuantity(String productId, int quantity) async {
-    final db = await instance.database;
-    return await db.update(
-      'cart',
+    await db.update(
+      'local_cart',
       {'quantity': quantity},
       where: 'product_id = ?',
       whereArgs: [productId],
     );
   }
 
-  Future<int> deleteCartItem(String productId) async {
+  Future<void> deleteCartItem(String productId) async {
     final db = await instance.database;
-    return await db.delete('cart', where: 'product_id = ?', whereArgs: [productId]);
+    await db.delete('local_cart', where: 'product_id = ?', whereArgs: [productId]);
   }
 
-  Future<int> clearCart() async {
+  Future<void> clearCart() async {
     final db = await instance.database;
-    return await db.delete('cart');
+    await db.delete('local_cart');
   }
 }
