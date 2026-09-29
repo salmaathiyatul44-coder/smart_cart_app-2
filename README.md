@@ -1,17 +1,13 @@
-# flutter_application_2
+# SMART CART E-CATALOG 🛒
 
-A new Flutter project.
+Aplikasi katalog dan keranjang belanja digital sederhana yang dirancang dengan pendekatan *Offline-First* menggunakan Flutter. Aplikasi ini memudahkan pengguna untuk melihat katalog produk, menambah/mengedit produk, dan mengelola keranjang belanja secara efisien.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## 🚀 Fitur Utama
 
-A few resources to get you started if this is your first Flutter project:
+- 📱 **Katalog Produk**: Menampilkan daftar produk dengan harga dan gambar yang rapi.
+- ➕ **Tambah & Edit Produk**: Memungkinkan pengguna menambahkan produk baru lengkap dengan pilihan foto dari galeri.
+- 🛒 **Keranjang Belanja**: Mengelola produk yang dipilih pengguna secara *real-time*.
+- 📶 **Offline-First**: Seluruh data tersimpan secara lokal pada perangkat tanpa memerlukan koneksi internet secara terus-menerus.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
